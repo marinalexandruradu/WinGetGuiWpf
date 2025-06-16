@@ -1,0 +1,22 @@
+﻿<Window x:Class="WinGetGuiWpf.LogViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Log Viewer"
+        Height="400"
+        Width="600"
+        Background="{StaticResource WindowBackground}"
+        Foreground="{StaticResource TextBrush}">
+    <Grid>
+        <TextBox x:Name="LogText"
+                 Text="{Binding FullOutput, Mode=OneWay}"
+                 IsReadOnly="True"
+                 TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto"
+                 FontFamily="Consolas"
+                 FontSize="12"
+                 Background="{StaticResource WindowBackground}"
+                 Foreground="{StaticResource TextBrush}"
+                 Margin="10"/>
+    </Grid>
+</Window>
