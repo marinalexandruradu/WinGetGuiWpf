@@ -544,6 +544,60 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task SearchPackagesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SearchTerm))
+            return;
+
+        IsLoading = true;
+        SearchResults.Clear();
+
+        await Task.Run(() =>
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "winget",
+                    Arguments = $"search \"{SearchTerm}\" --exact --source winget",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.UTF8
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            var lines = output.Split('\n')
+                .Skip(1)
+                .Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith("Name") && !l.Contains("----"))
+                .ToList();
+
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                foreach (var line in lines)
+                {
+                    var parts = System.Text.RegularExpressions.Regex.Split(line.Trim(), @"\s{2,}");
+                    if (parts.Length >= 2)
+                    {
+                        SearchResults.Add(new WingetSearchResult
+                        {
+                            Name = parts[0],
+                            Id = parts[1]
+                        });
+                    }
+                }
+
+                IsLoading = false;
+            });
+        });
+    }
+
+
+    [RelayCommand]
     public void ShowInstallLog(UpgradeStatusItem item)
     {
         if (item is null)
