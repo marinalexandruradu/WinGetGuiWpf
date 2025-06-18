@@ -46,3 +46,6 @@ Windows 10 or higher
 winget
 ![winget-easy](https://github.com/user-attachments/assets/4305d83a-a721-4aec-b2db-c34157550aff)
 
+
+
+![winget-easy-upgrade-all](https://github.com/user-attachments/assets/bf8a7a7f-d398-4200-875e-47aa55211091)
