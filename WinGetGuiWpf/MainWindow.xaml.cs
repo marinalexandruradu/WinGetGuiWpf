@@ -22,6 +22,7 @@ namespace WinGetGuiWpf
     {
         public MainWindow()
         {
+            System.IO.File.AppendAllText("toast_launch.log", $"MainWindow constructor called at {DateTime.Now:O}\n");
             InitializeComponent();
             var viewModel = (MainViewModel)DataContext;
 
@@ -82,6 +83,13 @@ namespace WinGetGuiWpf
             {
                 MessageBox.Show("Failed to open browser: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void Options_Click(object sender, RoutedEventArgs e)
+        {
+            var optionsWindow = new OptionsWindow();
+            optionsWindow.Owner = this;
+            optionsWindow.ShowDialog();
         }
 
 

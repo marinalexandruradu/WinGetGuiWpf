@@ -3,10 +3,16 @@ using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
+using Windows.Storage;
+using System.IO;
+using Microsoft.Toolkit.Uwp.Notifications;
+
+
 
 namespace WinGetGuiWpf.ViewModels;
 
@@ -544,6 +550,60 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task SearchPackagesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SearchTerm))
+            return;
+
+        IsLoading = true;
+        SearchResults.Clear();
+
+        await Task.Run(() =>
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "winget",
+                    Arguments = $"search \"{SearchTerm}\" --exact --source winget",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = Encoding.UTF8
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
+            var lines = output.Split('\n')
+                .Skip(1)
+                .Where(l => !string.IsNullOrWhiteSpace(l) && !l.StartsWith("Name") && !l.Contains("----"))
+                .ToList();
+
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                foreach (var line in lines)
+                {
+                    var parts = System.Text.RegularExpressions.Regex.Split(line.Trim(), @"\s{2,}");
+                    if (parts.Length >= 2)
+                    {
+                        SearchResults.Add(new WingetSearchResult
+                        {
+                            Name = parts[0],
+                            Id = parts[1]
+                        });
+                    }
+                }
+
+                IsLoading = false;
+            });
+        });
+    }
+
+
+    [RelayCommand]
     public void ShowInstallLog(UpgradeStatusItem item)
     {
         if (item is null)
@@ -562,4 +622,193 @@ public partial class MainViewModel : ObservableObject
         var logWindow = new LogViewerWindow(item);
         logWindow.Show();
     }
+
+
+
+
+    public static void CheckAndNotifyUpdates()
+    {
+        EnsureStartMenuShortcut("WinGetGuiWpf");
+
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "winget",
+                Arguments = "upgrade",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = Encoding.UTF8
+            }
+        };
+
+        process.Start();
+        var output = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+
+        var updateLines = output.Split('\n')
+            .Skip(1)
+            .Where(line =>
+                !string.IsNullOrWhiteSpace(line) &&
+                !line.Contains("----") &&
+                !line.StartsWith("No", StringComparison.OrdinalIgnoreCase) &&
+                line.Contains(" "))
+            .ToList();
+
+        if (updateLines.Count > 0)
+        {
+            var exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            var exeDirectory = System.IO.Path.GetDirectoryName(exePath);
+            var iconPath = System.IO.Path.Combine(exeDirectory, "logo.png");
+
+            if (File.Exists(iconPath))
+            {
+                var iconUri = new Uri($"file:///{iconPath.Replace("\\", "/")}");
+
+                new ToastContentBuilder()
+                    .AddAppLogoOverride(iconUri, ToastGenericAppLogoCrop.Circle)
+                    .AddText($"WinGet Easy: {updateLines.Count} updates available")
+                    .AddText("Launch the app manually to apply them")
+                    .Show();
+            }
+            else
+            {
+                new ToastContentBuilder()
+                    .AddText($"WinGet GUI: {updateLines.Count} updates available")
+                    .AddText("Launch the app manually to apply them")
+                    .Show();
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public static void EnsureStartMenuShortcut(string appId)
+    {
+        string shortcutPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.StartMenu),
+            "Programs", "WinGetGuiWpf.lnk");
+
+        if (System.IO.File.Exists(shortcutPath))
+            return;
+
+        string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+
+        var shellLink = (IShellLinkW)new CShellLink();
+        shellLink.SetPath(exePath);
+        shellLink.SetWorkingDirectory(Path.GetDirectoryName(exePath));
+        shellLink.SetDescription("WinGetGuiWpf");
+
+        // Assign AppUserModelID via COM property store
+        var propStore = (IPropertyStore)shellLink;
+        using var appIdProp = new PropVariant(appId);
+        propStore.SetValue(SystemProperties.System.AppUserModel.ID, appIdProp);
+        propStore.Commit();
+
+        var persistFile = (IPersistFile)shellLink;
+        persistFile.Save(shortcutPath, true);
+    }
+
+    [ComImport]
+    [Guid("D55B53B4-04B9-4E3A-9DA8-7C78A471AAAD")]
+    private class CShellLink { }
+
+    [ComImport]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [Guid("D55B53B4-04B9-4E3A-9DA8-7C78A471AAAD")]
+    private interface IShellLinkW
+    {
+        void SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);
+        void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string pszDir);
+        void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+        // Only needed methods for our use case
+    }
+
+    [ComImport]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [Guid("D55B53B4-04B9-4E3A-9DA8-7C78A471AAAD")]
+    private interface IPropertyStore
+    {
+        void GetCount(out uint cProps);
+        void GetAt(uint iProp, out PropertyKey pkey);
+        void GetValue(ref PropertyKey key, out PropVariant pv);
+        void SetValue(ref PropertyKey key, [In] PropVariant pv);
+        void Commit();
+    }
+
+    [ComImport]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [Guid("D55B53B4-04B9-4E3A-9DA8-7C78A471AAAD")]
+    private interface IPersistFile
+    {
+        void GetClassID(out Guid pClassID);
+        void IsDirty();
+        void Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, uint dwMode);
+        void Save([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, bool fRemember);
+        void SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string pszFileName);
+        void GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string ppszFileName);
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct PropertyKey
+    {
+        public Guid fmtid;
+        public uint pid;
+
+        public PropertyKey(Guid formatId, uint propertyId)
+        {
+            fmtid = formatId;
+            pid = propertyId;
+        }
+    }
+
+    private static class SystemProperties
+    {
+        public static class System
+        {
+            public static class AppUserModel
+            {
+                public static PropertyKey ID => new(new Guid("D55B53B4-04B9-4E3A-9DA8-7C78A471AAAD"), 5);
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private sealed class PropVariant : IDisposable
+    {
+        [FieldOffset(0)]
+        ushort vt;
+        [FieldOffset(8)]
+        IntPtr ptr;
+
+        public PropVariant(string value)
+        {
+            vt = 31; // VT_LPWSTR
+            ptr = Marshal.StringToCoTaskMemUni(value);
+        }
+
+        public void Dispose()
+        {
+            PropVariantClear(this);
+            GC.SuppressFinalize(this);
+        }
+
+        ~PropVariant() => Dispose();
+
+        [DllImport("Ole32.dll")]
+        private static extern int PropVariantClear([In, Out] PropVariant pvar);
+    }
+
+
 }

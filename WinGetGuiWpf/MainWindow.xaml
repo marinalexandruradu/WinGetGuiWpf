@@ -171,6 +171,8 @@
 
         <Menu Grid.Row="0">
             <MenuItem Header="_File">
+                <MenuItem Header="_Options" Click="Options_Click"/>
+                <Separator/>
                 <MenuItem Header="_Exit" Click="ExitMenu_Click"/>
             </MenuItem>
             <MenuItem Header="_Info">
@@ -343,6 +345,13 @@
                        VerticalAlignment="Center"
                        Foreground="{StaticResource AccentBrush}"/>
         </DockPanel>
+        <TextBlock Text="Version: 1.2"
+           HorizontalAlignment="Right"
+           VerticalAlignment="Bottom"
+           Margin="0 0 10 10"
+           FontSize="10"
+           Foreground="White" />
+
     </Grid>
 </Window>
 
