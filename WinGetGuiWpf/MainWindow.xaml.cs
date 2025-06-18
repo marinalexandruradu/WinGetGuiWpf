@@ -22,7 +22,7 @@ namespace WinGetGuiWpf
     {
         public MainWindow()
         {
-            System.IO.File.AppendAllText("toast_launch.log", $"MainWindow constructor called at {DateTime.Now:O}\n");
+         //   System.IO.File.AppendAllText("toast_launch.log", $"MainWindow constructor called at {DateTime.Now:O}\n");
             InitializeComponent();
             var viewModel = (MainViewModel)DataContext;
 

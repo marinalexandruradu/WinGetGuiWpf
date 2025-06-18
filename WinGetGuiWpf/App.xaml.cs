@@ -16,7 +16,7 @@ namespace WinGetGuiWpf
         {
             try
             {
-                System.IO.File.AppendAllText("toast_launch.log", $"MAIN ENTRY: {string.Join(" | ", args)} at {DateTime.Now:O}\n");
+               // System.IO.File.AppendAllText("toast_launch.log", $"MAIN ENTRY: {string.Join(" | ", args)} at {DateTime.Now:O}\n");
                 ToastNotificationHandler.Initialize();
                 SetCurrentProcessExplicitAppUserModelID("WinGetGuiWpf");
                 var app = new App();
@@ -25,7 +25,7 @@ namespace WinGetGuiWpf
             }
             catch (Exception ex)
             {
-                System.IO.File.AppendAllText("startup_crash.log", ex.ToString() + Environment.NewLine);
+              //  System.IO.File.AppendAllText("startup_crash.log", ex.ToString() + Environment.NewLine);
             }
         }
 
@@ -33,12 +33,12 @@ namespace WinGetGuiWpf
         {
             base.OnStartup(e);
 
-            System.IO.File.AppendAllText("toast_launch.log", $"OnStartup: {string.Join(" | ", e.Args)} at {DateTime.Now:O}\n");
+         //   System.IO.File.AppendAllText("toast_launch.log", $"OnStartup: {string.Join(" | ", e.Args)} at {DateTime.Now:O}\n");
 
             // 1. Check for background update trigger first
             if (e.Args.Contains("-checkforupdates", StringComparer.OrdinalIgnoreCase))
             {
-                System.IO.File.AppendAllText("toast_launch.log", "Action: CheckForUpdates\n");
+             //   System.IO.File.AppendAllText("toast_launch.log", "Action: CheckForUpdates\n");
                 MainViewModel.CheckAndNotifyUpdates();
                 Shutdown(); // <-- Exit WITHOUT showing the window!
                 return;
@@ -48,7 +48,7 @@ namespace WinGetGuiWpf
             if (e.Args.Any(arg => arg.Contains("launchEZ", StringComparison.OrdinalIgnoreCase)) ||
                 e.Args.Any(arg => arg.Contains("action=launchEZ", StringComparison.OrdinalIgnoreCase)))
             {
-                System.IO.File.AppendAllText("toast_launch.log", "Action: launchEZ\n");
+               // System.IO.File.AppendAllText("toast_launch.log", "Action: launchEZ\n");
                 ShowMainWindow("toast/launchEZ");
                 return;
             }
@@ -56,14 +56,14 @@ namespace WinGetGuiWpf
             // 3. Protocol activation or other custom logic if needed...
 
             // 4. Default: normal launch
-            System.IO.File.AppendAllText("toast_launch.log", "Action: Default (show main window)\n");
+          //  System.IO.File.AppendAllText("toast_launch.log", "Action: Default (show main window)\n");
             ShowMainWindow("default");
         }
 
 
         private void ShowMainWindow(string source)
         {
-            System.IO.File.AppendAllText("toast_launch.log", $"ShowMainWindow called from: {source} at {DateTime.Now:O}\n");
+           // System.IO.File.AppendAllText("toast_launch.log", $"ShowMainWindow called from: {source} at {DateTime.Now:O}\n");
             var mainWindow = new MainWindow
             {
                 WindowState = WindowState.Normal,

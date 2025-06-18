@@ -24,7 +24,7 @@ namespace WinGetGuiWpf
             if (!_isInitialized)
             {
                 ToastNotificationManagerCompat.OnActivated += OnToastActivated;
-                Log("ToastNotificationHandler.Initialize called.");
+              //  Log("ToastNotificationHandler.Initialize called.");
                 _isInitialized = true;
             }
         }
@@ -33,12 +33,12 @@ namespace WinGetGuiWpf
         {
             try
             {
-                Log($"OnToastActivated fired! Args: {e.Argument}");
+               // Log($"OnToastActivated fired! Args: {e.Argument}");
 
                 // This is the argument from the toast button
                 if (e.Argument.Contains("launchEZ"))
                 {
-                    Log("Launching a new instance with 'action=launchEZ'...");
+//Log("Launching a new instance with 'action=launchEZ'...");
 
                     // Use ProcessStartInfo to launch your app as a new process
                     Process.Start(new ProcessStartInfo
@@ -48,26 +48,26 @@ namespace WinGetGuiWpf
                         UseShellExecute = true
                     });
 
-                    Log("Process.Start issued.");
+                   // Log("Process.Start issued.");
                 }
                 else
                 {
-                    Log("No recognized argument in OnToastActivated.");
+                  //  Log("No recognized argument in OnToastActivated.");
                 }
             }
             catch (System.Exception ex)
             {
-                Log($"EXCEPTION in OnToastActivated: {ex}");
+              //  Log($"EXCEPTION in OnToastActivated: {ex}");
             }
         }
 
-        private static void Log(string message)
-        {
-            try
-            {
-                File.AppendAllText("toast_activator.log", $"{System.DateTime.Now:O}: {message}\n");
-            }
-            catch { /* ignore secondary errors */ }
-        }
+        //private static void Log(string message)
+        //{
+        //    try
+        //    {
+        //        File.AppendAllText("toast_activator.log", $"{System.DateTime.Now:O}: {message}\n");
+        //    }
+        //    catch { /* ignore secondary errors */ }
+        //}
     }
 }
